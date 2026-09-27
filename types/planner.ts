@@ -1,0 +1,11 @@
+﻿export const categories = ['Personal', 'Work', 'School', 'Appointment', 'Bills', 'Important', 'Other'] as const;
+export const priorities = ['Low', 'Medium', 'High'] as const;
+export type Priority = typeof priorities[number];
+export type Category = typeof categories[number];
+export const recurrenceOptions = ['none', 'daily', 'weekly', 'monthly', 'yearly'] as const;
+export type Recurrence = typeof recurrenceOptions[number];
+export const reminderOptions = [{value: '', label: 'None'}, {value: '10', label: '10 minutes before'}, {value: '30', label: '30 minutes before'}, {value: '60', label: '1 hour before'}, {value: '1440', label: '1 day before'}] as const;
+export type PlannerEvent = { recurrence?: Recurrence; recurrence_interval?: number; recurrence_end_date?: string | null; reminder_minutes?: number | null; series_start_date?: string; id: string; user_id: string; title: string; description: string | null; event_date: string; start_time: string | null; end_time: string | null; category: Category; priority: Priority; location: string | null; status: 'upcoming' | 'completed' | 'cancelled'; created_at: string; updated_at: string };
+export type Task = { id: string; user_id: string; title: string; description: string | null; due_date: string | null; priority: Priority; status: 'pending' | 'completed'; created_at: string; updated_at: string };
+export type EventInput = Omit<PlannerEvent, 'series_start_date' | 'id' | 'user_id' | 'created_at' | 'updated_at'>;
+export type TaskInput = Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at'>;

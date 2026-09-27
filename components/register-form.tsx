@@ -1,0 +1,31 @@
+'use client';
+import { useState } from 'react';
+import Link from 'next/link';
+import { CalendarDays, Eye, EyeOff, ArrowRight, Leaf, LockKeyhole, UserPlus } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
+export function RegisterForm({configured}: {configured: boolean}) {
+  const [show, setShow] = useState(false); const [showConfirm, setShowConfirm] = useState(false); const [busy, setBusy] = useState(false); const [error, setError] = useState(''); const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({}); const [done, setDone] = useState(false);
+  async function submit(e: React.SubmitEvent<HTMLFormElement>) {
+    e.preventDefault(); if (!configured) { setError('Supabase is not configured. Add your project URL and publishable key to .env.local.'); return; }
+    const data = new FormData(e.currentTarget);
+    const fullName = String(data.get('full_name') ?? '').trim();
+    const email = String(data.get('email') ?? '').trim();
+    const password = String(data.get('password') ?? '');
+    const confirmPassword = String(data.get('password_confirm') ?? '');
+    const errors: Record<string, string> = {};
+    if (!fullName) errors.full_name = 'Please enter your full name.';
+    else if (fullName.length > 200) errors.full_name = 'Full name must be 200 characters or fewer.';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = 'Please enter a valid email address.';
+    if (password.length < 6) errors.password = 'Password must be at least 6 characters.';
+    if (confirmPassword !== password || !confirmPassword) errors.password_confirm = 'Passwords do not match.';
+    if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
+    setFieldErrors({}); setBusy(true); setError('');
+    try {
+      const {data: signUpData, error} = await createClient().auth.signUp({email, password, options: {data: {full_name: fullName}}});
+      if (error) throw error;
+      if (signUpData.session) { window.location.assign('/dashboard'); return; }
+      setDone(true); setBusy(false);
+    } catch (err) { setError((err as Error).message); setBusy(false); }
+  }
+  return <main className="login-page"><section className="login-story"><div className="brand"><span className="brand-icon"><CalendarDays size={22}/></span>My Planner<span className="brand-dot">.</span></div><div className="story-content"><span className="eyebrow">A LITTLE SPACE, JUST FOR YOU</span><h1>Less on your mind.<br/>More in your day.</h1><p>Your plans, priorities, and everyday moments.<br/>Together in one calm place.</p><div className="planner-illustration" aria-hidden="true"><div className="illustration-heading"><span>A little more balance</span><CalendarDays size={18}/></div><div className="illustration-days">{['M','T','W','T','F','S','S'].map((d,i) => <span key={i}>{d}</span>)}{Array.from({length:21},(_,i) => <span className={i === 9 ? 'marked' : ''} key={i+7}>{i+1}</span>)}</div><div className="illustration-event"><span className="color-dot dot-personal"/>Make time for yourself<span style={{marginLeft:'auto'}}>✓</span></div></div></div><div className="story-footer"><Leaf size={18}/>Make space for what matters.</div></section><section className="login-main"><div className="login-form-wrap"><span className="login-symbol"><UserPlus size={26}/></span><span className="eyebrow">YOUR DAY STARTS HERE</span><h2>Create your account.</h2><p className="login-subtitle">A little space to organise your days.</p>{!configured && <div className="setup-notice" role="status"><strong>One small setup step</strong><p>Connect your Supabase project to get started. Add the URL and publishable key to <code>.env.local</code>, run <code>supabase/schema.sql</code>, then restart the app. Full instructions are in README.md.</p></div>}{done ? <div className="setup-notice" role="status"><strong>Check your email to confirm your account</strong><p>A confirmation link is on its way to your inbox. Open it to activate your account, then come back and sign in to your planner.</p></div> : <form onSubmit={submit}><fieldset disabled={busy}><label>Full name<input name="full_name" type="text" autoComplete="name" placeholder="Your full name" required maxLength={200} autoFocus/>{fieldErrors.full_name && <span className="field-error" role="alert">{fieldErrors.full_name}</span>}</label><label>Email address<input name="email" type="email" autoComplete="email" placeholder="you@example.com" required/>{fieldErrors.email && <span className="field-error" role="alert">{fieldErrors.email}</span>}</label><label>Password<div className="password-field"><input name="password" type={show ? 'text' : 'password'} autoComplete="new-password" placeholder="At least 6 characters" required minLength={6}/><button type="button" className="icon-button" aria-label={show ? 'Hide password' : 'Show password'} onClick={() => setShow(!show)}>{show ? <EyeOff size={18}/> : <Eye size={18}/>}</button></div>{fieldErrors.password && <span className="field-error" role="alert">{fieldErrors.password}</span>}</label><label>Confirm password<div className="password-field"><input name="password_confirm" type={showConfirm ? 'text' : 'password'} autoComplete="new-password" placeholder="Repeat your password" required minLength={6}/><button type="button" className="icon-button" aria-label={showConfirm ? 'Hide confirmation' : 'Show confirmation'} onClick={() => setShowConfirm(!showConfirm)}>{showConfirm ? <EyeOff size={18}/> : <Eye size={18}/>}</button></div>{fieldErrors.password_confirm && <span className="field-error" role="alert">{fieldErrors.password_confirm}</span>}</label></fieldset>{error && <p className="form-error" role="alert">{error}</p>}<button className="button primary sign-in" disabled={busy}>{busy ? 'Creating account…' : 'Create account'}<ArrowRight size={18}/></button></form>}<p className="login-help">Already have an account? <Link className="text-link" href="/login">Sign in</Link></p><div className="login-security"><LockKeyhole size={13}/>Private plans. Your space.</div></div><footer className="login-footer">A little structure. More room for life.</footer></section></main>;
+}
